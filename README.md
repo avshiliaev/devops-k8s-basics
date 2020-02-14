@@ -1,8 +1,7 @@
 ### Create yaml
 
-deployment.yaml
-
-````YAML
+_deployment.yaml_
+```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -26,13 +25,13 @@ spec:
 
 ### Apply yaml
 
-kubectl apply -f ./deployment.yaml
+`kubectl apply -f ./deployment.yaml`
 
 ### Expose deployment (create service)
 
-kubectl expose deployment tomcat-deployment --type=NodePort
+`kubectl expose deployment tomcat-deployment --type=NodePort`
 
 ### Get the url
 
-minikube service tomcat-deployment --url
+`minikube service tomcat-deployment --url`
 
