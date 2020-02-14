@@ -1,8 +1,3 @@
-### Create yaml
-
-deployment.yaml
-
-````YAML
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -22,17 +17,3 @@ spec:
           image: tomcat:9.0
           ports:
             - containerPort: 8080
-````
-
-### Apply yaml
-
-kubectl apply -f ./deployment.yaml
-
-### Expose deployment (create service)
-
-kubectl expose deployment tomcat-deployment --type=NodePort
-
-### Get the url
-
-minikube service tomcat-deployment --url
-
