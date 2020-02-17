@@ -113,7 +113,7 @@ And axpose a service:
 
 You should see the following status in your watch mode:
 
-[img](images/10_repl.png)
+![img](images/10_repl.png)
 
 Let's change the image to `nginx:latest` while the cluster is running:
 
@@ -121,7 +121,7 @@ Let's change the image to `nginx:latest` while the cluster is running:
 
 The rolling update spin up, but without any downtime on the cluster:
 
-[img](images/rolling_update.png)
+![img](images/rolling_update.png)
 
 Now you can access the rollout history:
 
