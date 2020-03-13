@@ -10,7 +10,7 @@ Additionally, we will need to activate the metrics-server.
 
 In a separate terminal window apply the following command:
 
-`watch kubectl get svc,deployment,pods`
+`watch kubectl get svc,deployment,pods,hpa`
 
 Now you should be able to controll the current status of your deployment.
 
@@ -24,6 +24,10 @@ is defined there. Open a new terminal window. We will run several commands to ge
 You can spin up a cluster by running the following command:
 
 `kubectl apply -f ./01_basic/deployment.yaml`
+
+So looks the result:
+
+![img](images/1.png)
 
 ### Expose deployment (create service)
 
@@ -56,7 +60,13 @@ Now we need to define a Load Balancer so we could access our replica set as a se
 Services of type LoadBalancer can be exposed via the `minikube tunnel` command on your local machine.
 It will run in a separate terminal until Ctrl-C is hit.
 
+So looks the result:
+
+![img](images/2.png)
+
 ### Autoscaling
+
+#### Configure
 
 The scaling is closely related to the resource limit. Let's set one as following:
 
@@ -64,7 +74,11 @@ The scaling is closely related to the resource limit. Let's set one as following
 
 As the limits are set, we can now define a autoscaling policy:
 
-`kubectl autoscale deployment.v1.apps/nginx-deployment --min=2 --max=15 --cpu-percent=60`
+`kubectl autoscale deployment nginx-deployment --cpu-percent=50 --min=1 --max=10`
+
+#### Load test
+
+**With Apache Benchmarking**
 
 Now let's make the same load test to see how many requests we're giong to process, 
 and how the k8s will handle the increased load with autoscaling.
@@ -74,6 +88,23 @@ With Apache Bench we now make:
 * with 100 concurent threads
 
 `ab -n 1000000 -c 100 http://<service-ip>/`
+
+**With a container**
+
+Run:
+ 
+`kubectl run --generator=run-pod/v1 -it --rm load-generator --image=busybox /bin/sh`
+
+In the opened promt enter the following: 
+
+`while true; do wget -q -O- http://nginx-deployment.default.svc.cluster.local; done`
+
+Unlike ab, this will run an infinite loop until you break it.
+
+With either way you should see an increased load along with a number of new pods starting up to deal with it.
+
+![img](images/3.png)
+
 
 You can further inspect your autoscaler with the following commands:
 
@@ -99,6 +130,10 @@ contain an entry for that tunnel. To remove orphaned routes, run:
 
 ## Rolling updates
 
+![img](images/rolling_diagram.png)
+
+### Recreate the setup
+
 Run the basic deployment again: 
 
 `kubectl apply -f ./01_Basic/deployment.yaml`
@@ -107,13 +142,15 @@ Set the number of replicas to 10:
 
 `kubectl scale --replicas=10 deployment/nginx-deployment`
 
-And axpose a service:
+And expose a service:
 
 `kubectl expose deployment nginx-deployment --type=LoadBalancer --port=80 --target-port=80 --name nginx-load-balancer`
 
 You should see the following status in your watch mode:
 
 ![img](images/10_repl.png)
+
+### Change an image
 
 Let's change the image to `nginx:latest` while the cluster is running:
 
@@ -122,6 +159,8 @@ Let's change the image to `nginx:latest` while the cluster is running:
 The rolling update spin up, but without any downtime on the cluster:
 
 ![img](images/rolling_update.png)
+
+### Rollback
 
 Now you can access the rollout history:
 
@@ -134,3 +173,21 @@ iterate over rollout revisions:
 and, most importantly, roll back:
 
 `kubectl rollout undo deployment.v1.apps/nginx-deployment`.
+
+## Health checks
+
+By default, Kubernetes starts to send traffic to a pod when all the containers inside the pod start, and restarts 
+containers when they crash. While this can be “good enough” when you are starting out, you can make your deployments 
+more robust by creating custom health checks.
+
+Kubernetes gives you two types of health checks, and it is important to understand the differences between the two, 
+and their uses.
+* Readiness probes are designed to let Kubernetes know when your app is ready to serve traffic. Kubernetes makes sure 
+the readiness probe passes before allowing a service to send traffic to the pod. If a readiness probe starts to fail, 
+Kubernetes stops sending traffic to the pod until it passes.
+* Liveness probes let Kubernetes know if your app is alive or dead. If you app is alive, then Kubernetes leaves it alone. 
+If your app is dead, Kubernetes removes the Pod and starts a new one to replace it.
+
+There are three types of probes: HTTP, Command, and TCP. You can use any of them for liveness and readiness checks.
+
+Here is a simpliest example for our app under `./03_health_checks/`
